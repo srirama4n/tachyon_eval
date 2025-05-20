@@ -210,11 +210,25 @@ const Metrics: React.FC = () => {
   const fetchEvaluations = async () => {
     try {
       setIsLoading(true);
-      // TODO: Implement actual API call
-      // const response = await apiService.getEvaluations();
-      // setEvaluations(response);
+      // Simulate API call with a delay
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      // Simulate API response with dummy data
+      const response = {
+        data: dummyEvaluations,
+        status: 200,
+        message: 'Successfully fetched evaluations'
+      };
+
+      // Simulate error handling
+      if (response.status !== 200) {
+        throw new Error(response.message);
+      }
+
+      setEvaluations(response.data);
     } catch (error) {
       console.error('Failed to fetch evaluations:', error);
+      // You could add error state handling here if needed
     } finally {
       setIsLoading(false);
     }
