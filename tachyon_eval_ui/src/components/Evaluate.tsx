@@ -25,6 +25,7 @@ import {
   IconButton,
   LinearProgress,
   Fade,
+  Tooltip,
 } from '@mui/material';
 import { Grid } from '@mui/material';
 import { apiService } from '../services/api';
@@ -50,6 +51,7 @@ import ChatIcon from '@mui/icons-material/Chat';
 import FolderIcon from '@mui/icons-material/Folder';
 import AccessTimeIcon from '@mui/icons-material/AccessTime';
 import Autocomplete from '@mui/material/Autocomplete';
+import DownloadIcon from '@mui/icons-material/Download';
 
 interface Dataset {
   id: string;
@@ -74,6 +76,7 @@ interface EvaluationHistory {
   end_time?: string;
   parameters: { name: string; value: string; }[];
   evaluation_name: string;
+  usecase_id: string;
 }
 
 type SortField = 'status' | 'dataset_name' | 'model_id' | 'start_time' | 'duration' | 'evaluation_name';
@@ -127,7 +130,8 @@ const Evaluate: React.FC = () => {
             start_time: h.created_at,
             end_time: h.completed_at || h.failed_at,
             parameters: h.parameters,
-            evaluation_name: h.evaluation_name
+            evaluation_name: h.evaluation_name,
+            usecase_id: h.usecase_id,
           }));
           setEvaluationHistory(history);
         } catch (error) {
@@ -169,7 +173,8 @@ const Evaluate: React.FC = () => {
         start_time: h.created_at,
         end_time: h.completed_at || h.failed_at,
         parameters: h.parameters,
-        evaluation_name: h.evaluation_name
+        evaluation_name: h.evaluation_name,
+        usecase_id: h.usecase_id,
       }));
       setEvaluationHistory(history);
     } catch (error) {
@@ -224,7 +229,8 @@ const Evaluate: React.FC = () => {
         evaluation_name: response.evaluation_name,
         dataset_name: datasets.find(d => d.id === response.dataset_id)?.alias || response.dataset_id,
         status: 'running',
-        start_time: response.created_at
+        start_time: response.created_at,
+        usecase_id: response.usecase_id,
       };
 
       setEvaluationHistory(prev => [newEvaluation, ...prev]);
@@ -311,6 +317,71 @@ const Evaluate: React.FC = () => {
   const SortIcon = ({ field }: { field: SortField }) => {
     if (field !== sortField) return null;
     return sortOrder === 'asc' ? <ArrowUpwardIcon fontSize="small" /> : <ArrowDownwardIcon fontSize="small" />;
+  };
+
+  const handleDownload = async (evaluationId: string, usecaseId: string) => {
+    try {
+      const response = await apiService.getEvaluationResponses(usecaseId, evaluationId);
+      
+      // Create HTML table
+      const tableHtml = `
+        <html>
+          <head>
+            <style>
+              table { border-collapse: collapse; width: 100%; }
+              th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+              th { background-color: #f5f5f5; }
+              .success { color: green; }
+              .failure { color: red; }
+            </style>
+          </head>
+          <body>
+            <h2>${response.evaluation_name}</h2>
+            <table>
+              <tr>
+                <th>Input</th>
+                <th>Actual Output</th>
+                <th>Expected Output</th>
+                <th>Success</th>
+                <th>Metrics</th>
+              </tr>
+              <tr>
+                <td>${response.data.input}</td>
+                <td>${response.data.actualoutput}</td>
+                <td>${response.data.expectedOutput || 'N/A'}</td>
+                <td class="${response.data.success ? 'success' : 'failure'}">
+                  ${response.data.success ? '✓' : '✗'}
+                </td>
+                <td>
+                  ${response.data.metricsData.map(metric => `
+                    <div>
+                      <strong>${metric.name}:</strong> ${metric.score} 
+                      (${metric.success ? '✓' : '✗'})
+                      <br/>
+                      <small>${metric.reason}</small>
+                    </div>
+                  `).join('<br/>')}
+                </td>
+              </tr>
+            </table>
+          </body>
+        </html>
+      `;
+
+      // Create and download file
+      const blob = new Blob([tableHtml], { type: 'text/html' });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${response.evaluation_name.replace(/[^a-z0-9]/gi, '_').toLowerCase()}_results.html`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Error downloading evaluation results:', error);
+      setError('Failed to download evaluation results');
+    }
   };
 
   return (
@@ -980,6 +1051,21 @@ const Evaluate: React.FC = () => {
                             }
                           }}
                         />
+                        {evaluation.status === 'completed' && (
+                          <Tooltip title="Download Results">
+                            <IconButton
+                              size="small"
+                              onClick={() => handleDownload(evaluation.id, evaluation.usecase_id)}
+                              sx={{
+                                '&:hover': {
+                                  backgroundColor: 'primary.lighter'
+                                }
+                              }}
+                            >
+                              <DownloadIcon fontSize="small" color="primary" />
+                            </IconButton>
+                          </Tooltip>
+                        )}
                       </Stack>
                     </TableCell>
                     <TableCell sx={{ py: 1.5 }}>

@@ -48,6 +48,37 @@ export interface EvaluationHistory {
   error: string
 }
 
+interface EvaluationResponse {
+  id: string;
+  evaluation_id: string;
+  evaluation_name: string;
+  dataset_id: string;
+  model_id: string;
+  usecase_id: string;
+  status: string;
+  created_at: string;
+  data: {
+    name: string;
+    input: string;
+    actualoutput: string;
+    expectedOutput: string;
+    context: string[];
+    retrievalContext: string[];
+    success: boolean;
+    metricsData: {
+      name: string;
+      threshold: number;
+      success: boolean;
+      score: number;
+      reason: string;
+      strictMode: boolean;
+      evaluationModel: string;
+      verboseLogs: string;
+    }[];
+    runDuration: number;
+    order: number;
+  };
+}
 
 interface CacheEntry<T> {
   data: T;
@@ -392,6 +423,14 @@ class ApiService {
       if (error instanceof ApiError) throw error;
       throw new ApiError(500, 'Failed to fetch evaluation history');
     }
+  }
+
+  async getEvaluationResponses(usecaseId: string, evaluationId: string): Promise<EvaluationResponse> {
+    const response = await fetch(`/api/v1/usecases/${usecaseId}/evaluations/${evaluationId}/responses`);
+    if (!response.ok) {
+      throw new Error('Failed to fetch evaluation responses');
+    }
+    return response.json();
   }
 }
 

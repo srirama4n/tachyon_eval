@@ -221,7 +221,7 @@ const DatasetEditor: React.FC = () => {
         count: 1,
         tags: [],
       });
-      setSuccessMessage('Golden generated and saved successfully');
+      setSuccessMessage('Generation is in progress. Please comeback after sometime');
     } catch (error) {
       console.error('Error generating content:', error);
       setError(error instanceof Error ? error.message : 'Failed to generate content. Please try again.');
@@ -730,10 +730,46 @@ const DatasetEditor: React.FC = () => {
 
       <Snackbar 
         open={!!successMessage} 
-        autoHideDuration={3000} 
+        autoHideDuration={6000} 
         onClose={() => setSuccessMessage(null)}
+        anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+        sx={{
+          top: '24px !important',
+          '& .MuiAlert-root': {
+            minWidth: '400px',
+            boxShadow: '0 4px 20px rgba(0,0,0,0.15)',
+            borderRadius: '8px',
+            padding: '12px 16px',
+            fontSize: '1rem',
+            fontWeight: 500
+          }
+        }}
       >
-        <Alert onClose={() => setSuccessMessage(null)} severity="success" sx={{ width: '100%' }}>
+        <Alert 
+          onClose={() => setSuccessMessage(null)} 
+          severity="info" 
+          sx={{ 
+            width: '100%',
+            backgroundColor: 'primary.lighter',
+            color: 'primary.dark',
+            '& .MuiAlert-icon': {
+              color: 'primary.main',
+              fontSize: '1.5rem'
+            },
+            '& .MuiAlert-message': {
+              fontSize: '1rem',
+              fontWeight: 500,
+              padding: '4px 0'
+            },
+            '& .MuiAlert-action': {
+              paddingLeft: '16px'
+            },
+            '&:hover': {
+              backgroundColor: 'primary.light',
+              transition: 'background-color 0.2s ease'
+            }
+          }}
+        >
           {successMessage}
         </Alert>
       </Snackbar>
