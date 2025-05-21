@@ -23,6 +23,8 @@ import {
   MenuItem,
   FormControl,
   InputLabel,
+  IconButton,
+  Tooltip,
 } from '@mui/material';
 import {
   BarChart,
@@ -30,7 +32,7 @@ import {
   XAxis,
   YAxis,
   CartesianGrid,
-  Tooltip,
+  Tooltip as RechartsTooltip,
   Legend,
   ResponsiveContainer,
   PieChart,
@@ -51,6 +53,7 @@ import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import ErrorIcon from '@mui/icons-material/Error';
 import PlayCircleIcon from '@mui/icons-material/PlayCircle';
 import PendingIcon from '@mui/icons-material/Pending';
+import DownloadIcon from '@mui/icons-material/Download';
 import { apiService } from '../services/api';
 
 interface MetricData {
@@ -387,6 +390,85 @@ const Metrics: React.FC = () => {
     }
   };
 
+  const handleDownload = async (evaluationId: string, usecaseId: string) => {
+    try {
+      // Get the evaluation data from our current state instead of making an API call
+      const evaluation = evaluations.find(e => e.evaluation_id === evaluationId);
+      if (!evaluation) {
+        throw new Error('Evaluation not found');
+      }
+
+      // Create HTML table with the data we already have
+      const tableHtml = `
+        <html>
+          <head>
+            <style>
+              body { font-family: Arial, sans-serif; margin: 20px; }
+              table { border-collapse: collapse; width: 100%; margin-top: 20px; }
+              th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+              th { background-color: #f5f5f5; font-weight: bold; }
+              .success { color: #2e7d32; }
+              .failure { color: #d32f2f; }
+              .header { margin-bottom: 20px; }
+              .header h2 { color: #1976d2; margin: 0; }
+              .header p { color: #666; margin: 5px 0; }
+              .metrics { margin-top: 10px; }
+              .metrics strong { color: #1976d2; }
+              .metrics small { color: #666; display: block; margin-top: 5px; }
+            </style>
+          </head>
+          <body>
+            <div class="header">
+              <h2>${evaluation.evaluation_name}</h2>
+              <p>Dataset ID: ${evaluation.dataset_id}</p>
+              <p>Model: ${evaluation.model_id}</p>
+              <p>Created: ${new Date(evaluation.created_at).toLocaleString()}</p>
+            </div>
+            <table>
+              <tr>
+                <th>Input</th>
+                <th>Actual Output</th>
+                <th>Expected Output</th>
+                <th>Success</th>
+                <th>Metrics</th>
+              </tr>
+              <tr>
+                <td>${evaluation.data.input}</td>
+                <td>${evaluation.data.actualoutput}</td>
+                <td>${evaluation.data.expectedOutput || 'N/A'}</td>
+                <td class="${evaluation.data.success ? 'success' : 'failure'}">
+                  ${evaluation.data.success ? '✓ Success' : '✗ Failed'}
+                </td>
+                <td>
+                  ${evaluation.data.metricsData.map(metric => `
+                    <div class="metrics">
+                      <strong>${metric.name}:</strong> ${(metric.score * 100).toFixed(1)}%
+                      (${metric.success ? '✓' : '✗'})
+                      <small>${metric.reason}</small>
+                    </div>
+                  `).join('')}
+                </td>
+              </tr>
+            </table>
+          </body>
+        </html>
+      `;
+
+      // Create and download file
+      const blob = new Blob([tableHtml], { type: 'text/html' });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${evaluation.evaluation_name.replace(/[^a-z0-9]/gi, '_').toLowerCase()}_results.html`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Error downloading evaluation results:', error);
+    }
+  };
+
   return (
     <Box sx={{ p: 3, maxWidth: '1600px', mx: 'auto' }}>
       <Box 
@@ -586,6 +668,7 @@ const Metrics: React.FC = () => {
                       <TableCell sx={{ fontWeight: 600 }}>Duration</TableCell>
                       <TableCell sx={{ fontWeight: 600 }}>Success</TableCell>
                       <TableCell sx={{ fontWeight: 600 }}>Score</TableCell>
+                      <TableCell sx={{ fontWeight: 600 }}>Actions</TableCell>
                     </TableRow>
                   </TableHead>
                   <TableBody>
@@ -682,6 +765,25 @@ const Metrics: React.FC = () => {
                             />
                           </Box>
                         </TableCell>
+                        <TableCell>
+                          <Stack direction="row" alignItems="center" spacing={1}>
+                            {evaluation.status === 'completed' && (
+                              <Tooltip title="Download Results">
+                                <IconButton
+                                  size="small"
+                                  onClick={() => handleDownload(evaluation.evaluation_id, evaluation.usecase_id)}
+                                  sx={{
+                                    '&:hover': {
+                                      backgroundColor: 'primary.lighter'
+                                    }
+                                  }}
+                                >
+                                  <DownloadIcon fontSize="small" color="primary" />
+                                </IconButton>
+                              </Tooltip>
+                            )}
+                          </Stack>
+                        </TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
@@ -736,7 +838,7 @@ const Metrics: React.FC = () => {
                       stroke={theme.palette.text.secondary}
                       tick={{ fontSize: 12 }}
                     />
-                    <Tooltip content={<CustomTooltip />} />
+                    <RechartsTooltip content={<CustomTooltip />} />
                     <Legend />
                     <Area
                       type="monotone"
@@ -806,7 +908,7 @@ const Metrics: React.FC = () => {
                       stroke={theme.palette.text.secondary}
                       tick={{ fontSize: 12 }}
                     />
-                    <Tooltip content={<CustomTooltip />} />
+                    <RechartsTooltip content={<CustomTooltip />} />
                     <Legend />
                     <Bar 
                       dataKey="success" 
@@ -882,7 +984,7 @@ const Metrics: React.FC = () => {
                         />
                       ))}
                     </Pie>
-                    <Tooltip content={<CustomTooltip />} />
+                    <RechartsTooltip content={<CustomTooltip />} />
                   </PieChart>
                 </ResponsiveContainer>
               </Box>

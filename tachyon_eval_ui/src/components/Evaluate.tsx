@@ -323,20 +323,29 @@ const Evaluate: React.FC = () => {
     try {
       const response = await apiService.getEvaluationResponses(usecaseId, evaluationId);
       
-      // Create HTML table
       const tableHtml = `
         <html>
           <head>
             <style>
-              table { border-collapse: collapse; width: 100%; }
-              th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
-              th { background-color: #f5f5f5; }
-              .success { color: green; }
-              .failure { color: red; }
+              body { font-family: Arial, sans-serif; margin: 20px; }
+              table { border-collapse: collapse; width: 100%; margin-top: 20px; }
+              th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+              th { background-color: #f5f5f5; font-weight: bold; }
+              .success { color: #2e7d32; }
+              .failure { color: #d32f2f; }
+              .header { margin-bottom: 20px; }
+              .header h2 { color: #1976d2; margin: 0; }
+              .header p { color: #666; margin: 5px 0; }
+              .metrics { margin-top: 10px; }
+              .metrics strong { color: #1976d2; }
+              .metrics small { color: #666; display: block; margin-top: 5px; }
             </style>
           </head>
           <body>
-            <h2>${response.evaluation_name}</h2>
+            <div class="header">
+              <h2>${response.evaluation_name}</h2>
+            </div>
+
             <table>
               <tr>
                 <th>Input</th>
@@ -350,17 +359,16 @@ const Evaluate: React.FC = () => {
                 <td>${response.data.actualoutput}</td>
                 <td>${response.data.expectedOutput || 'N/A'}</td>
                 <td class="${response.data.success ? 'success' : 'failure'}">
-                  ${response.data.success ? '✓' : '✗'}
+                  ${response.data.success ? '✓ Success' : '✗ Failed'}
                 </td>
                 <td>
                   ${response.data.metricsData.map(metric => `
-                    <div>
-                      <strong>${metric.name}:</strong> ${metric.score} 
+                    <div class="metrics">
+                      <strong>${metric.name}:</strong> ${(metric.score * 100).toFixed(1)}%
                       (${metric.success ? '✓' : '✗'})
-                      <br/>
                       <small>${metric.reason}</small>
                     </div>
-                  `).join('<br/>')}
+                  `).join('')}
                 </td>
               </tr>
             </table>
@@ -368,7 +376,6 @@ const Evaluate: React.FC = () => {
         </html>
       `;
 
-      // Create and download file
       const blob = new Blob([tableHtml], { type: 'text/html' });
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -380,7 +387,6 @@ const Evaluate: React.FC = () => {
       window.URL.revokeObjectURL(url);
     } catch (error) {
       console.error('Error downloading evaluation results:', error);
-      setError('Failed to download evaluation results');
     }
   };
 
