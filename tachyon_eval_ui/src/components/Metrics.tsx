@@ -568,9 +568,12 @@ const Metrics: React.FC = () => {
             }}
           >
             <CardContent>
-              <Typography variant="h6" sx={{ mb: 3, fontWeight: 600 }}>
-                Recent Evaluations
-              </Typography>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 3 }}>
+                <AssessmentIcon sx={{ color: 'primary.main', fontSize: 24 }} />
+                <Typography variant="h6" sx={{ fontWeight: 500 }}>
+                  Recent Evaluations
+                </Typography>
+              </Box>
               <TableContainer>
                 <Table>
                   <TableHead>
@@ -582,6 +585,7 @@ const Metrics: React.FC = () => {
                       <TableCell sx={{ fontWeight: 600 }}>Created At</TableCell>
                       <TableCell sx={{ fontWeight: 600 }}>Duration</TableCell>
                       <TableCell sx={{ fontWeight: 600 }}>Success</TableCell>
+                      <TableCell sx={{ fontWeight: 600 }}>Score</TableCell>
                     </TableRow>
                   </TableHead>
                   <TableBody>
@@ -613,16 +617,28 @@ const Metrics: React.FC = () => {
                           <Typography variant="body2" sx={{ fontWeight: 500 }}>
                             {evaluation.evaluation_name}
                           </Typography>
+                          <Typography variant="caption" color="text.secondary">
+                            ID: {evaluation.evaluation_id}
+                          </Typography>
                         </TableCell>
                         <TableCell>
                           <Typography variant="body2">
                             {evaluation.dataset_id}
                           </Typography>
+                          <Typography variant="caption" color="text.secondary">
+                            Usecase: {evaluation.usecase_id}
+                          </Typography>
                         </TableCell>
                         <TableCell>
-                          <Typography variant="body2">
-                            {evaluation.model_id}
-                          </Typography>
+                          <Chip
+                            label={evaluation.model_id}
+                            size="small"
+                            sx={{
+                              backgroundColor: alpha(theme.palette.primary.main, 0.1),
+                              color: 'primary.main',
+                              fontWeight: 500
+                            }}
+                          />
                         </TableCell>
                         <TableCell>
                           <Typography variant="body2">
@@ -639,7 +655,32 @@ const Metrics: React.FC = () => {
                             label={evaluation.data.success ? 'Success' : 'Failed'}
                             color={evaluation.data.success ? 'success' : 'error'}
                             size="small"
+                            sx={{ fontWeight: 500 }}
                           />
+                        </TableCell>
+                        <TableCell>
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                            <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                              {(evaluation.data.metricsData[0]?.score * 100).toFixed(1)}%
+                            </Typography>
+                            <LinearProgress
+                              variant="determinate"
+                              value={evaluation.data.metricsData[0]?.score * 100}
+                              sx={{
+                                width: 60,
+                                height: 6,
+                                borderRadius: 3,
+                                backgroundColor: alpha(theme.palette.primary.main, 0.1),
+                                '& .MuiLinearProgress-bar': {
+                                  backgroundColor: evaluation.data.metricsData[0]?.score >= 0.8 
+                                    ? theme.palette.success.main 
+                                    : evaluation.data.metricsData[0]?.score >= 0.5 
+                                    ? theme.palette.warning.main 
+                                    : theme.palette.error.main
+                                }
+                              }}
+                            />
+                          </Box>
                         </TableCell>
                       </TableRow>
                     ))}
