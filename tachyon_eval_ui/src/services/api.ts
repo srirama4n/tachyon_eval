@@ -112,7 +112,7 @@ export class ApiError extends Error {
 }
 
 // API Service
-class ApiService {
+export class ApiService {
   private static instance: ApiService;
   private api = axios.create({
     baseURL: API_BASE_URL,
@@ -432,6 +432,20 @@ class ApiService {
     }
     return response.json();
   }
+
+  // Validate use case ID
+  async validateUseCaseId(id: string): Promise<boolean> {
+    try {
+      const response = await this.api.get(`/api/v1/usecases/${id}`);
+      return response.status === 200;
+    } catch (error) {
+      if (axios.isAxiosError(error) && error.response?.status === 404) {
+        return false;
+      }
+      throw error;
+    }
+  }
 }
 
+// Export a singleton instance
 export const apiService = ApiService.getInstance(); 
